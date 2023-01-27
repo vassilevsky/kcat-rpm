@@ -29,9 +29,22 @@ jobs:
       - run: kcat -h
       - run: rpmlint $rpm
 
+      - uses: actions/upload-artifact@v3
+        with:
+          name: rpm
+          path: ${{ env.rpm }}
+
+  publish-rpm:
+    needs: make-rpm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: rpm
+
       - uses: danielmundi/upload-packagecloud@v1
         with:
           packagecloud-token: ${{ secrets.PACKAGECLOUD_TOKEN }}
           packagecloud-username: vassilevsky
           packagecloud-repo: test
-          package-name: ${{ env.rpm }}
+          package-name: kcat-1.7.1-1.el7.x86_64.rpm
