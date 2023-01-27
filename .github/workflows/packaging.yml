@@ -47,4 +47,5 @@ jobs:
           packagecloud-token: ${{ secrets.PACKAGECLOUD_TOKEN }}
           packagecloud-username: vassilevsky
           packagecloud-repo: test
+          packagecloud-distrib: el/7 # https://packagecloud.io/docs#anchor-el
           package-name: kcat-1.7.1-1.el7.x86_64.rpm
