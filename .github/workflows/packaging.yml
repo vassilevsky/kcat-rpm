@@ -47,8 +47,9 @@ jobs:
       rpm: /github/home/rpmbuild/RPMS/x86_64/kcat-1.7.1-1.el8.x86_64.rpm
 
     steps:
-      - run: sed -i 's/mirrorlist/#mirrorlist/g'                                            /etc/yum.repos.d/CentOS-*
-      - run: sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+      - run: sed -i 's|mirrorlist|#mirrorlist|'                      /etc/yum.repos.d/CentOS-*
+      - run: sed -i 's|#baseurl=http://mirror|baseurl=http://vault|' /etc/yum.repos.d/CentOS-*
+      - run: sed -i 's|enabled=0|enabled=1|'                         /etc/yum.repos.d/CentOS-Linux-PowerTools.repo
 
       - run: yum install -y which wget rpmlint rpmdevtools patch make gcc libtool yajl-devel librdkafka-devel zlib-devel
 
