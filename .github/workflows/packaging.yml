@@ -1,7 +1,7 @@
 on: push
 
 jobs:
-  make-rpm:
+  el7-build:
     runs-on: ubuntu-latest
 
     container:
@@ -31,16 +31,54 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: rpm
+          name: el7-rpm
           path: ${{ env.rpm }}
 
-  publish-rpm:
-    needs: make-rpm
+
+  el8-build:
+    runs-on: ubuntu-latest
+
+    container:
+      image: centos:8
+      volumes:
+        - ${{ github.workspace }}:/etc/kcat
+
+    env:
+      rpm: /github/home/rpmbuild/RPMS/x86_64/kcat-1.7.1-1.el8.x86_64.rpm
+
+    steps:
+      - run: sed -i 's/mirrorlist/#mirrorlist/g'                                            /etc/yum.repos.d/CentOS-*
+      - run: sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+
+      - run: yum install -y which wget rpmlint rpmdevtools patch make gcc libtool yajl-devel librdkafka-devel zlib-devel
+
+      - uses: actions/checkout@v3
+
+      - run: rpmlint /etc/kcat/kcat.spec
+
+      - run: rpmdev-setuptree
+      - run: wget https://github.com/edenhill/kcat/archive/refs/tags/1.7.1.tar.gz -O ~/rpmbuild/SOURCES/kcat-1.7.1.tar.gz
+      - run: cp   /etc/kcat/kcat.patch                                               ~/rpmbuild/SOURCES
+      - run: rpmbuild -bb /etc/kcat/kcat.spec
+
+      - run: rpm -qlp $rpm
+      - run: yum install -y $rpm
+      - run: kcat -h
+      - run: rpmlint $rpm
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: el8-rpm
+          path: ${{ env.rpm }}
+
+
+  el7-publish:
+    needs: el7-build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v3
         with:
-          name: rpm
+          name: el7-rpm
 
       - uses: danielmundi/upload-packagecloud@v1
         with:
@@ -49,3 +87,20 @@ jobs:
           packagecloud-repo: test
           packagecloud-distrib: el/7 # https://packagecloud.io/docs#anchor-el
           package-name: kcat-1.7.1-1.el7.x86_64.rpm
+
+
+  el8-publish:
+    needs: el8-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: el8-rpm
+
+      - uses: danielmundi/upload-packagecloud@v1
+        with:
+          packagecloud-token: ${{ secrets.PACKAGECLOUD_TOKEN }}
+          packagecloud-username: vassilevsky
+          packagecloud-repo: test
+          packagecloud-distrib: el/8 # https://packagecloud.io/docs#anchor-el
+          package-name: kcat-1.7.1-1.el8.x86_64.rpm
